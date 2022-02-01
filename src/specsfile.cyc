@@ -52,7 +52,7 @@ void add_cyclone_exec_path(string_t s) {
 // Reading a specs file
 
 #define MAXSTRNAME 256
-#define MAXSTRVALUE 4096
+#define MAXSTRVALUE 16384
 
 specs_t read_specs(const char ?file) {
   let result = NULL;

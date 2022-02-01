@@ -202,7 +202,7 @@ $(BL)/cyc-lib/$(build)/cycspecs: config/buildspecs
 	echo "*cyclone_inc_path:" >> $@
 	echo "  $(INC_INSTALL)" >> $@
 	echo "" >> $@
-	config/buildspecs >> $@
+	config/buildspecs "$(CC)" >> $@
 
 $(BL)/cyc-lib/$(build)/cyc_setjmp.h: bin/cyc-lib/libc.cys bin/buildlib$(EXE)
 	bin/buildlib$(EXE) -B$(BL)/cyc-lib -d $(BB)/include -setjmp > $@

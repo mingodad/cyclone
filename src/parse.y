@@ -1166,7 +1166,7 @@ using Parse;
 %pure_parser
 
 // ANSI C (or GCC) keywords
-%token AUTO REGISTER STATIC EXTERN TYPEDEF VOID CHAR SHORT INT LONG FLOAT
+%token AUTO REGISTER STATIC EXTERN TYPEDEF VOID CHAR SHORT INT LONG FLOAT FLOAT128
 %token DOUBLE SIGNED UNSIGNED CONST VOLATILE RESTRICT
 %token STRUCT UNION CASE DEFAULT INLINE SIZEOF OFFSETOF
 %token IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN ENUM TYPEOF
@@ -1334,6 +1334,7 @@ prog:
     { $$ = $!1;
       parse_result = $1;
     }
+;
 
 translation_unit:
   external_declaration translation_unit
@@ -1573,7 +1574,7 @@ open_opt:
 | '=' IDENTIFIER '(' expression ')'
    {  if (strcmp($2,"open") != 0) Warn::err(SLOC(@4),"expecting `open'");
       $$ = ^$($4); }
-
+;
 declaration_list:
   declaration                  { $$=$!1; }
 | declaration_list declaration { $$=^$(List::imp_append($1,$2)); }
@@ -1654,7 +1655,7 @@ attributes:
   ATTRIBUTE '(' '(' attribute_list ')' ')' { $$=$!4; }
 ;
 attribute_list:
-  attribute { $$=^$(new List($1,NULL)); };
+  attribute { $$=^$(new List($1,NULL)); }
 | attribute ',' attribute_list { $$=^$(new List($1,$3)); }
 ;
 attribute:
@@ -1687,6 +1688,7 @@ type_specifier_notypedef:
 | INT       { $$=^$(type_spec(sint_type,SLOC(@1))); }
 | LONG      { $$=^$(long_spec(SLOC(@1))); }
 | FLOAT     { $$=^$(type_spec(float_type,SLOC(@1))); }
+| FLOAT128  { $$=^$(type_spec(float128_type,SLOC(@1))); }
 | DOUBLE    { $$=^$(type_spec(double_type,SLOC(@1))); }
 | SIGNED    { $$=^$(signed_spec(SLOC(@1))); }
 | UNSIGNED  { $$=^$(unsigned_spec(SLOC(@1))); }
@@ -1963,7 +1965,7 @@ datatypefield_scope:
          { $$=^$(Public);}
 | EXTERN { $$=^$(Extern);}
 | STATIC { $$=^$(Static);}
-
+;
 datatypefield:
   datatypefield_scope qual_opt_identifier
     { $$=^$(new Datatypefield($2,NULL,LOC(@1,@2),$1)); }
@@ -2066,7 +2068,7 @@ direct_declarator_withtypedef:
 pointer:
   one_pointer         { $$ = $!1; }
 | one_pointer pointer { $$ = ^$(imp_append($1,$2)); }
-
+;
 one_pointer:
   pointer_null_and_bound pointer_quals eff_opt attributes_opt tqual_list
   { list_t<type_modifier_t<`yy>,`yy> ans = NULL;
@@ -2081,7 +2083,7 @@ one_pointer:
     ans = rnew(yyr) List(mod, ans);
     $$=^$(ans);
   }
-
+;
 pointer_quals:
   /* empty */                { $$=^$(NULL); }
 | pointer_qual pointer_quals { $$=^$(rnew(yyr) List($1,$2)); }
@@ -2209,11 +2211,11 @@ parameter_type_list:
 opt_aqual_bnd:
 {$$=^$(NULL);}
 | AQUAL_SHORT_CONST {$$ = ^$(id2aqual(SLOC(@1), $1));}
-
+;
 type_var:
   TYPE_VAR opt_aqual_bnd  { $$ = ^$(id2type($1,new Unknown_kb(NULL),$2, SLOC(@1))); }
 | TYPE_VAR COLON_COLON kind opt_aqual_bnd { $$ = ^$(id2type($1,Kinds::kind_to_bound($3),$4, SLOC(@1))); }
-
+;
 optional_effect:
   /* empty */    { $$=^$(NULL); }
 | ';' effect_set { $$ = ^$(join_eff($2)); }
@@ -2622,7 +2624,7 @@ block_item_list:
 					    skip_stmt(DL))); }
 | function_definition2 block_item_list
    { $$=^$(flatten_decl(new_decl(new Fn_d($1),SLOC(@1)), $2)); }
-
+;
 /* This has the standard shift-reduce conflict which is properly resolved. */
 selection_statement:
   IF '(' expression ')' statement
@@ -3307,7 +3309,7 @@ field_name:
 right_angle:
   '>'      {}
 | RIGHT_OP { yylex_buf->lex_curr_pos -= 1; }
-
+;
 //grammar for parsing a constraint graph
 all_constraints:
 {$$ = ^$(NULL);}

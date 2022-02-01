@@ -165,6 +165,7 @@ static $(string_t,short,bool) rw_array[] = {
   $("extern", EXTERN, true),
   $("fallthru", FALLTHRU, false),
   $("float", FLOAT, true),
+  $("_Float128", FLOAT128, true),
   $("for", FOR, true),
   $("goto", GOTO, true),
   $("if", IF, true),

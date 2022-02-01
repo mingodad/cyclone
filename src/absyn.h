@@ -961,7 +961,7 @@ namespace Absyn {
   // signed types
   extern type_t schar_type, sshort_type, sint_type, slong_type, slonglong_type;
   // float, double, long double, wchar_t
-  extern type_t float_type, double_type, long_double_type, wchar_type();
+  extern type_t float_type, double_type, long_double_type, float128_type, wchar_type();
   type_t gen_float_type(unsigned);
   // complex types
   extern type_t complex_type(type_t);

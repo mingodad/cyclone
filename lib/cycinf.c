@@ -327,7 +327,7 @@ case ONE_TYPE:
 fprintf(arg1,"1");
 break;
 case CONSTANT_TYPE:
-fprintf(arg1,term_get_constant_name(ecr));
+fprintf(arg1,"%s",term_get_constant_name(ecr));
 break;
 case ATOMIC_:
 fprintf(arg1,"atomic");
@@ -471,7 +471,8 @@ int effect_cmp(const effect e1,const effect e2)
 bool effect_is_constant(effect e, const char *name) 
 {
  if (setif_is_constant(e))
-return (! strcmp(name,setif_get_constant_name(e)));
+if (!name) return TRUE;
+else return (! strcmp(name,setif_get_constant_name(e)));
 else return FALSE;
 }
 
@@ -521,7 +522,7 @@ case ONE_TYPE:
 fprintf(arg1,"1");
 break;
 case CONSTANT_TYPE:
-fprintf(arg1,setif_get_constant_name(arg2));
+fprintf(arg1,"%s",setif_get_constant_name(arg2));
 break;
 case UNION_TYPE:
 {
@@ -702,7 +703,7 @@ case ONE_TYPE:
 fprintf(arg1,"1");
 break;
 case CONSTANT_TYPE:
-fprintf(arg1,term_get_constant_name(ecr));
+fprintf(arg1,"%s",term_get_constant_name(ecr));
 break;
 
 default:
@@ -854,7 +855,7 @@ case ONE_TYPE:
 fprintf(arg1,"1");
 break;
 case CONSTANT_TYPE:
-fprintf(arg1,term_get_constant_name(ecr));
+fprintf(arg1,"%s",term_get_constant_name(ecr));
 break;
 
 default:
@@ -1074,7 +1075,7 @@ case ONE_TYPE:
 fprintf(arg1,"1");
 break;
 case CONSTANT_TYPE:
-fprintf(arg1,term_get_constant_name(ecr));
+fprintf(arg1,"%s",term_get_constant_name(ecr));
 break;
 case EQ_:
 {

@@ -224,7 +224,7 @@ rule line "line_t" = parse
 { return NULL; }
 
 and macroname = parse
-  idchar+ '(' ')'
+  idchar+ '(' "..."? ')' /*FIXME manage vararg macros*/
 { current_source = new (string_t)substring(lexeme(lexbuf), 0,
                                           lexeme_end(lexbuf)-lexeme_start(lexbuf)-2);
   current_args = NULL;
@@ -497,6 +497,20 @@ and slurp = parse /* returns 1 if more to do, 0 if all done */
 { return 1; }
 | [^ '"']
 { fputc(lexeme_char(lexbuf,0),(FILE @)slurp_out); return 1; }
+| "__THROW"
+{ log("Warning: use of __THROW deleted\n"); return 1; }
+| "__attribute__" ws* "((__nothrow__ , __leaf__))" /* Used in linux in sysmacros.h */
+{ log("Warning: use of __attribute__((__nothrow__ , __leaf__)) deleted\n");
+  return 1; }
+| "__attribute__" ws* "((const))" /* Used in linux in sysmacros.h */
+{ log("Warning: use of __attribute__((const)) deleted\n");
+  return 1; }
+| "__attribute__" ws* "((__malloc__))" /* Used in linux in stdio.h.h */
+{ log("Warning: use of __attribute__((__malloc__)) deleted\n");
+  return 1; }
+| "__asm__" ws* "(\"\" \"__isoc99_" [^'"']+ "\")" /* Used in linux in stdio.h.h */
+{ log("Warning: use of __asm__(\"\" \"__isoc99_*\") deleted\n");
+  return 1; }
 
 and slurp_string = parse /* returns 1 if more to do, 0 if all done */
   eof

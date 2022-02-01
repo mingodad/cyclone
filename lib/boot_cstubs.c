@@ -23,6 +23,7 @@
   #include "precore_c.h"
 
   #include <stdio.h>
+  #include <stdlib.h>
 
 extern struct Cyc___cycFILE { // must match defn in runtime_cyc.c
   FILE *file;

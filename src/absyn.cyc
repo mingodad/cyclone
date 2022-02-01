@@ -224,6 +224,7 @@ MAKE_INT_TYPE(nlonglong_type, None,     LongLong_sz);
 MAKE_FLOAT_TYPE(float_type, 0);
 MAKE_FLOAT_TYPE(double_type, 1);
 MAKE_FLOAT_TYPE(long_double_type, 2);
+MAKE_FLOAT_TYPE(float128_type, 3);
 
 MAKE_NULLARY_TYPE(empty_effect,JoinCon); // see kludge in join_eff below
 
@@ -311,6 +312,7 @@ type_t gen_float_type(unsigned i) {
   case 0: return float_type;
   case 1: return double_type;
   case 2: return long_double_type;
+  case 3: return float128_type;
   default: Warn::impos2("gen_float_type(",i,")");
   }
 }

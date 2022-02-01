@@ -125,7 +125,7 @@ streambufftest.o: streambufftest.cyc
 	$(CYCC) $(CYCFLAGS) -c $^
 
 testbget$(EXE): ../lib/bget.c ../lib/bget.h testbget.c
-	gcc -I../lib ../lib/bget.c testbget.c -lm -o testbget
+	$(CC) -I../lib ../lib/bget.c testbget.c -lm -o testbget
 
 scheme-2$(EXE): scheme-2.cyc
 	$(CYCC) $(CYCFLAGS) $^ -nogc -lm -o $@ 
