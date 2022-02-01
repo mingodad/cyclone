@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "bget.h"
+#include <string.h>
 
 //#define VERB
 
