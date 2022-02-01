@@ -36,6 +36,6 @@ jobs:
     - name: Upload cyclone-linux-i686 binary
       uses: actions/upload-artifact@v1
       with:
-        name: download glpsol-linux-i686
+        name: download cyclone-linux-i686
         path: cyclone-linux-i686.tgz
 
