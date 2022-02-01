@@ -1,0 +1,42 @@
+name: build and run tests
+on:
+  workflow_dispatch
+jobs:
+  build-release-linux-i686-amd64:
+    name: Cyclone master linux/amd64
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install depedencies
+      run: sudo apt-get install -y
+        gcc-8-i686-linux-gnu
+        g++-8-i686-linux-gnu
+    # see what's available in /usr/bin
+    - name: see what's available
+      run: ls -l /usr/bin
+    # build Cyclone i686
+    - name: build linux i686
+      run: |
+        sh do-conf-32
+        ./mk-it-32.sh
+        ./mk-it-32.sh install
+        tar zcf cyclone-linux-i686.tgz $HOME/local/cyclone-32
+    # run tests
+    - name: run tests linux i686
+      run: |
+        ./mk-it-32.sh test_bin
+    # build Cyclone bootstrap i686
+    - name: build bootstrap linux i686
+      run: |
+        ./mk-it-32.sh cyclone_src
+    # run bootstrap tests
+    - name: run tests linux i686
+      run: |
+        ./mk-it-32.sh test_boot
+    # upload artifact, cyclone installed folder
+    - name: Upload cyclone-linux-i686 binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: download glpsol-linux-i686
+        path: cyclone-linux-i686.tgz
+
