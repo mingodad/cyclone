@@ -103,7 +103,7 @@ The beginning of the main data segment.  The collector will trace all
 memory between <TT>DATASTART</tt> and <TT>DATAEND</tt> for root pointers.
 On some platforms,this can be defined to a constant address,
 though experience has shown that to be risky.  Ideally the linker will
-define a symbol (e.g. <TT>_data</tt> whose address is the beginning
+define a symbol (e.g. <TT>_data</tt>) whose address is the beginning
 of the data segment.  Sometimes the value can be computed using
 the <TT>GC_SysVGetDataStart</tt> function.  Not used if either
 the next macro is defined, or if dynamic loading is supported, and the
@@ -131,7 +131,7 @@ should be defined to the limits of the second main data segment.
 <DD>
 Should be defined if the stack (or thread stacks) grow towards higher
 addresses.  (This appears to be true only on PA-RISC.  If your architecture
-has more than one stack per thread, and is not already supported, you will
+has more than one stack per thread, and is not supported yet, you will
 need to do more work.  Grep for "IA64" in the source for an example.)
 <DT><TT>STACKBOTTOM</tt>
 <DD>
@@ -147,7 +147,7 @@ is defined, client code must explicitly set
 <DT><TT>LINUX_STACKBOTTOM</tt>
 <DD>
 May be defined instead of <TT>STACKBOTTOM</tt>.
-If defined, then the cold end of the stack will be determined
+If defined, then the cold end of the stack will be determined.
 Currently we usually read it from /proc.
 <DT><TT>HEURISTIC1</tt>
 <DD>
@@ -166,7 +166,7 @@ The cold end of the stack is determined by taking an address inside
 GC_init's frame, incrementing it repeatedly
 in small steps (decrement if <TT>STACK_GROWS_UP</tt>), and reading the value
 at each location.  We remember the value when the first
-Segmentation violation or Bus error is signalled, round that
+Segmentation violation or Bus error is signaled, round that
 to the nearest plausible page boundary, and use that as the
 stack base.
 <DT><TT>DYNAMIC_LOADING</tt>
@@ -212,10 +212,10 @@ from are copied to the stack.  Typically this can be done portably,
 but on some platforms it may require assembly code, or just
 tweaking of conditional compilation tests.
 <P>
-For GC7, if your platform supports <TT>getcontext()</tt>, then definining
+For GC7, if your platform supports <TT>getcontext()</tt>, then defining
 the macro <TT>UNIX_LIKE</tt> for your OS in <TT>gcconfig.h</tt>
-(if it isn't defined there already) is likely to solve the problem.
-otherwise, if you are using gcc, <TT>_builtin_unwind_init()</tt>
+(if it isn't defined there yet) is likely to solve the problem.
+Otherwise, if you are using gcc, <TT>_builtin_unwind_init()</tt>
 will be used, and should work fine.  If that is not applicable either,
 the implementation will try to use <TT>setjmp()</tt>.  This will work if your
 <TT>setjmp</tt> implementation saves all possibly pointer-valued registers
@@ -272,7 +272,7 @@ perform adequately as the allocation lock, you will probably need to
 ensure that a sufficient <TT>atomic_ops</tt> port
 exists for the platform to provided an atomic test and set
 operation.  (Current GC7 versions require more<TT>atomic_ops</tt>
-asupport than necessary.  This is a bug.)  For earlier versions define
+support than necessary.  This is a bug.)  For earlier versions define
 <TT>GC_test_and_set</tt> in <TT>gc_locks.h</tt>.
 <LI>Making any needed adjustments to <TT>pthread_stop_world.c</tt> and
 <TT>pthread_support.c</tt>.  Ideally none should be needed.  In fact,
@@ -298,7 +298,7 @@ of <TT>gcconfig.h</tt>.
 <LI>An appropriate versions of the functions
 <TT>GC_register_dynamic_libraries()</tt> should be defined in
 <TT>dyn_load.c</tt>.  This function should invoke
-<TT>GC_cond_add_roots(</tt><I>region_start, region_end</i><TT>, TRUE)</tt>
+<TT>GC_cond_add_roots(region_start, region_end, TRUE)</tt>
 on each dynamic library data section.
 </ul>
 <P>
@@ -316,15 +316,15 @@ locking behavior in this case.
 For incremental and generational collection to work, <TT>os_dep.c</tt>
 must contain a suitable "virtual dirty bit" implementation, which
 allows the collector to track which heap pages (assumed to be
-a multiple of the collectors block size) have been written during
+a multiple of the collector's block size) have been written during
 a certain time interval.  The collector provides several
 implementations, which might be adapted.  The default
 (<TT>DEFAULT_VDB</tt>) is a placeholder which treats all pages
 as having been written.  This ensures correctness, but renders
 incremental and generational collection essentially useless.
 <H2>Stack traces for debug support</h2>
-If stack traces in objects are need for debug support,
-<TT>GC_dave_callers</tt> and <TT>GC_print_callers</tt> must be
+If stack traces in objects are needed for debug support,
+<TT>GC_save_callers</tt> and <TT>GC_print_callers</tt> must be
 implemented.
 <H2>Disclaimer</h2>
 This is an initial pass at porting guidelines.  Some things

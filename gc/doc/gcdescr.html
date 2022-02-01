@@ -51,7 +51,7 @@ variables are again scanned similarly.
 <LI>
 <I>Sweep phase</i> Scans the heap for inaccessible, and hence unmarked,
 objects, and returns them to an appropriate free list for reuse.  This is
-not really a separate phase; even in non incremental mode this is operation
+not really a separate phase; even in non-incremental mode this operation
 is usually performed on demand during an allocation that discovers an empty
 free list.  Thus the sweep phase is very unlikely to touch a page that
 would not have been touched shortly thereafter anyway.
@@ -87,13 +87,13 @@ Different kinds are handled somewhat differently by certain parts
 of the garbage collector.  Certain kinds are scanned for pointers,
 others are not.  Some may have per-object type descriptors that
 determine pointer locations.  Or a specific kind may correspond
-to one specific object layout.  Two built-in kinds are uncollectable.
+to one specific object layout.  Two built-in kinds are uncollectible.
 One (<TT>STUBBORN</tt>) is immutable without special precautions.
 In spite of that, it is very likely that most C clients of the
 collector currently
 use at most two kinds: <TT>NORMAL</tt> and <TT>PTRFREE</tt> objects.
-The <A HREF="http://gcc.gnu.org/java">gcj</a> runtime also makes
-heavy use of a kind (allocated with GC_gcj_malloc) that stores
+The <A HREF="https://gcc.gnu.org/onlinedocs/gcc-4.8.5/gcj/">GCJ</a> runtime
+also makes heavy use of a kind (allocated with GC_gcj_malloc) that stores
 type information at a known offset in method tables.
 <P>
 The collector uses a two level allocator.  A large block is defined to
@@ -112,8 +112,19 @@ is significantly complicated by black-listing issues
 <P>
 Small blocks are allocated in chunks of size <TT>HBLKSIZE</tt>.
 Each chunk is
-dedicated to only one object size and kind.  The allocator maintains
+dedicated to only one object size and kind.
+<P>
+The allocator maintains
 separate free lists for each size and kind of object.
+Associated with each kind is an array of free list pointers,
+with entry <TT>freelist[</tt><I>i</i><TT>]</tt> pointing to
+a free list of size <I>i</i> objects.
+In recent versions of the
+collector, index <TT>i</tt> is expressed in granules, which are the
+minimum allocatable unit, typically 8 or 16 bytes.
+The free lists themselves are
+linked through the first word in each object (see <TT>obj_link()</tt>
+macro).
 <P>
 Once a large block is split for use in smaller objects, it can only
 be used for objects of that size, unless the collector discovers a completely
@@ -122,7 +133,7 @@ large block free list.
 <P>
 In order to avoid allocating blocks for too many distinct object sizes,
 the collector normally does not directly allocate objects of every possible
-request size.  Instead request are rounded up to one of a smaller number
+request size.  Instead, the request is rounded up to one of a smaller number
 of allocated sizes, for which free lists are maintained.  The exact
 allocated sizes are computed on demand, but subject to the constraint
 that they increase roughly in geometric progression.  Thus objects
@@ -131,7 +142,8 @@ the requested size, subject to alignment constraints.
 See <TT>GC_init_size_map</tt> for details.
 <P>
 The actual size rounding operation during small object allocation is
-implemented as a table lookup in <TT>GC_size_map</tt>.
+implemented as a table lookup in <TT>GC_size_map</tt> which maps
+a requested allocation size in bytes to a number of granules.
 <P>
 Both collector initialization and computation of allocated sizes are
 handled carefully so that they do not slow down the small object fast
@@ -156,7 +168,7 @@ fragmentation.  In particular:
 <UL>
 <LI> Programs with a large root set size and
 little live heap memory will expand the heap to amortize the cost of
-scanning the roots.  
+scanning the roots.
 <LI> Versions 5.x of the collector actually collect more frequently in
 nonincremental mode.  The large block allocator usually refuses to split
 large heap blocks once the garbage collection threshold is
@@ -206,7 +218,7 @@ between <TT>DATASTART</tt> and <TT>DATAEND</tt>, as defined in
 <TT>gcconfig.h</tt>.  However, in most cases, this will also involve
 static data regions associated with dynamic libraries.  These are
 identified by the mostly platform-specific code in <TT>dyn_load.c</tt>.
-</ul> 
+</ul>
 The marker maintains an explicit stack of memory regions that are known
 to be accessible, but that have not yet been searched for contained pointers.
 Each stack entry contains the starting address of the block to be scanned,
@@ -218,7 +230,7 @@ At the beginning of the mark phase, all root segments
 (as described above) are pushed on the
 stack by <TT>GC_push_roots</tt>.  (Registers and eagerly processed
 stack sections are processed by pushing the referenced objects instead
-of the stack section itself.)  If <TT>ALL_INTERIOR_PTRS</tt> is not
+of the stack section itself.)  If <TT>ALL_INTERIOR_POINTERS</tt> is not
 defined, then stack roots require special treatment.  In this case, the
 normal marking code ignores interior pointers, but <TT>GC_push_all_stack</tt>
 explicitly checks for interior pointers and pushes descriptors for target
@@ -238,11 +250,11 @@ a stop-the-world collection is:
 objects.  In this case <TT>GC_objects_are_marked</tt> will simultaneously
 be false, so the mark state is advanced to
 <LI> <TT>MS_PUSH_UNCOLLECTABLE</tt> indicating that it suffices to push
-uncollectable objects, roots, and then mark everything reachable from them.
-<TT>Scan_ptr</tt> is advanced through the heap until all uncollectable
+uncollectible objects, roots, and then mark everything reachable from them.
+<TT>Scan_ptr</tt> is advanced through the heap until all uncollectible
 objects are pushed, and objects reachable from them are marked.
 At that point, the next call to <TT>GC_mark_some</tt> calls
-<TT>GC_push_roots</tt> to push the roots.  It the advances the
+<TT>GC_push_roots</tt> to push the roots.  It, then, advances the
 mark state to
 <LI> <TT>MS_ROOTS_PUSHED</tt> asserting that once the mark stack is
 empty, all reachable objects are marked.  Once in this state, we work
@@ -260,7 +272,7 @@ each call, so that it can also be used by the incremental collector.
 It is fairly carefully tuned, since it usually consumes a large majority
 of the garbage collection time.
 <P>
-The fact that it perform a only a small amount of work per call also
+The fact that it performs only a small amount of work per call also
 allows it to be used as the core routine of the parallel marker.  In that
 case it is normally invoked on thread-private mark stacks instead of the
 global mark stack.  More details can be found in
@@ -304,7 +316,7 @@ Each table entry contains either 0, indicating that the page is not part
 of the garbage collected heap, a small integer <I>n</i>, indicating
 that the page is part of large object, starting at least <I>n</i> pages
 back, or a pointer to a descriptor for the page.  In the first case,
-the candidate pointer i not a true pointer and can be safely ignored.
+the candidate pointer is not a true pointer and can be safely ignored.
 In the last two cases, we can obtain a descriptor for the page containing
 the beginning of the object.
 <LI>
@@ -381,7 +393,7 @@ Both <TT>GC_register_disappearing_link</tt> and
 table.  The hash table is allocated out of collected memory, but
 the reference to the finalizable object is hidden from the collector.
 Currently finalization requests are processed non-incrementally at the
-end of a mark cycle.  
+end of a mark cycle.
 <P>
 The collector makes an initial pass over the table of finalizable objects,
 pushing the contents of unmarked objects onto the mark stack.
@@ -395,7 +407,7 @@ object itself becomes marked, we have uncovered
 a cycle involving the object.  This usually results in a warning from the
 collector.  Such objects are not finalized, since it may be
 unsafe to do so.  See the more detailed
-<A HREF="http://www.hpl.hp.com/personal/Hans_Boehm/gc/finalization.html"> discussion of finalization semantics</a>.
+<A HREF="http://www.hboehm.info/gc/finalization.html">discussion of finalization semantics</a>.
 <P>
 Any objects remaining unmarked at the end of this process are added to
 a queue of objects whose finalizers can be run.  Depending on collector
@@ -413,7 +425,7 @@ Java-style unordered finalization, and to ignore certain kinds of cycles,
 
 <H2>Generational Collection and Dirty Bits</h2>
 We basically use the concurrent and generational GC algorithm described in
-<A HREF="http://www.hpl.hp.com/personal/Hans_Boehm/gc/papers/pldi91.ps.Z">"Mostly Parallel Garbage Collection"</a>,
+<A HREF="http://www.hboehm.info/gc/papers/pldi91.ps.Z">"Mostly Parallel Garbage Collection"</a>,
 by Boehm, Demers, and Shenker.
 <P>
 The most significant modification is that
@@ -438,7 +450,7 @@ bytes of allocation have taken place.
 After <TT>GC_full_freq</tt> minor collections a major collection
 is started.
 <P>
-All collections initially run interrupted until a predetermined
+All collections initially run uninterrupted until a predetermined
 amount of time (50 msecs by default) has expired.  If this allows
 the collection to complete entirely, we can avoid correcting
 for data structure modifications during the collection.  If it does
@@ -467,7 +479,7 @@ may actually be better with mprotect and signals.)
 (<TT>PCR_VDB</tt>) By relying on an external dirty bit implementation, in this
 case the one in Xerox PCR.
 <LI>
-(<TT>DEFAULT_VDB</tt>) By treating all pages as dirty.  This is the default if 
+(<TT>DEFAULT_VDB</tt>) By treating all pages as dirty.  This is the default if
 none of the other techniques is known to be usable, and
 <TT>GC_malloc_stubborn</tt> is not used.  Practical only for testing, or if
 the vast majority of objects use <TT>GC_malloc_stubborn</tt>.
@@ -477,17 +489,17 @@ the vast majority of objects use <TT>GC_malloc_stubborn</tt>.
 
 The collector implements <I>black-listing</i> of pages, as described
 in
-<A HREF="http://www.acm.org/pubs/citations/proceedings/pldi/155090/p197-boehm/">
+<A HREF="http://dl.acm.org/citation.cfm?doid=155090.155109">
 Boehm, ``Space Efficient Conservative Collection'', PLDI '93</a>, also available
-<A HREF="papers/pldi93.ps.Z">here</a>.
+<A HREF="https://www.cs.rice.edu/~javaplt/311/Readings/pldi93.pdf">here</a>.
 <P>
 During the mark phase, the collector tracks ``near misses'', i.e. attempts
 to follow a ``pointer'' to just outside the garbage-collected heap, or
 to a currently unallocated page inside the heap.  Pages that have been
 the targets of such near misses are likely to be the targets of
 misidentified ``pointers'' in the future.  To minimize the future
-damage caused by such misidentifications they will be allocated only to
-small pointerfree objects. 
+damage caused by such misidentification, they will be allocated only to
+small pointer-free objects.
 <P>
 The collector understands two different kinds of black-listing.  A
 page may be black listed for interior pointer references
@@ -508,7 +520,7 @@ a block to a particular object kind and size.  It occasionally
 drops (i.e. allocates and forgets) blocks that are completely black-listed
 in order to avoid excessively long large block free lists containing
 only unusable blocks.  This would otherwise become an issue
-if there is low demand for small pointerfree objects.
+if there is low demand for small pointer-free objects.
 
 <H2>Thread support</h2>
 We support several different threading models.  Unfortunately Pthreads,
@@ -546,7 +558,7 @@ accomplished with <TT># define</tt>'s in <TT>gc.h</tt>
 (really <TT>gc_pthread_redirects.h</tt>), or optionally
 by using ld's function call wrapping mechanism under Linux.
 <P>
-Recent versions of the collector support several facilites to enhance
+Recent versions of the collector support several facilities to enhance
 the processor-scalability and thread performance of the collector.
 These are discussed in more detail <A HREF="scale.html">here</a>.
 We briefly outline the data approach to thread-local allocation in the
@@ -560,11 +572,12 @@ The free list arrays associated
 with each thread are only used to satisfy requests for objects that
 are  both very small, and belong to one of a small number of well-known
 kinds.  These currently include "normal" and pointer-free objects.
-Depending onthe configuration, "gcj" objects may also be included.
+Depending on the configuration, "gcj" objects may also be included.
 <P>
 Thread-local free list entries contain either a pointer to the first
 element of a free list, or they contain a counter of the number of
-allocation "granules" allocated so far.  Initially they contain the
+allocation granules, corresponding to objects of this size,
+allocated so far.  Initially they contain the
 value one, i.e. a small counter value.
 <P>
 Thread-local allocation allocates directly through the global
@@ -599,23 +612,10 @@ transferred back to the global free list.
 Note that if the collector is configured for thread-local allocation,
 GC versions before 7 do not invoke the thread-local allocator by default.
 <TT>GC_malloc</tt> only uses thread-local allocation in version 7 and later.
-In earlier versions, <TT>GC_MALLOC</tt> (all caps) may be directed
-to use thread-local allocation by defining <TT>GC_REDIRECT_TO_LOCAL</tt>
-and then include <TT>gc_local_alloc.h</tt>.
 <P>
 For some more details see <A HREF="scale.html">here</a>, and the
 technical report entitled
 <A HREF="http://www.hpl.hp.com/techreports/2000/HPL-2000-165.html">
-``Fast Multiprocessor Memory Allocation and Garbage Collection''
-</a>
-<P>
-<HR>
-<P>
-Comments are appreciated.  Please send mail to
-<A HREF="mailto:boehm@acm.org"><TT>boehm@acm.org</tt></a> or
-<A HREF="mailto:Hans.Boehm@hp.com"><TT>Hans.Boehm@hp.com</tt></a>
-<P>
-This is a modified copy of a page written while the author was at SGI.
-The original was <A HREF="http://reality.sgi.com/boehm/gcdescr.html">here</a>.
+"Fast Multiprocessor Memory Allocation and Garbage Collection"</a>
 </body>
 </html>

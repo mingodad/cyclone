@@ -1,7 +1,7 @@
 Copyright (c) 1988, 1989 Hans-J. Boehm, Alan J. Demers
 Copyright (c) 1991-1996 by Xerox Corporation.  All rights reserved.
 Copyright (c) 1996-1999 by Silicon Graphics.  All rights reserved.
-Copyright (c) 1999-2005 Hewlett-Packard Development Company, L.P.
+Copyright (c) 1999-2011 by Hewlett-Packard Development Company.
 
 The file linux_threads.c is also
 Copyright (c) 1998 by Fergus Henderson.  All rights reserved.
@@ -28,14 +28,23 @@ modified is included with the above copyright notice.
 A few of the files needed to use the GNU-style build procedure come with
 slightly different licenses, though they are all similar in spirit.  A few
 are GPL'ed, but with an exception that should cover all uses in the
-collector.  (If you are concerned about such things, I recommend you look
+collector. (If you are concerned about such things, I recommend you look
 at the notice in config.guess or ltmain.sh.)
 
-This is version 7.1 of a conservative garbage collector for C and C++.
+The atomic_ops library contains some code that is covered by the GNU General
+Public License, but is not needed by, nor linked into the collector library.
+It is included here only because the atomic_ops distribution is, for
+simplicity, included in its entirety.
+
+This is version 7.2o of a conservative garbage collector for C and C++.
 
 You might find a more recent version of this at
 
-http://www.hpl.hp.com/personal/Hans_Boehm/gc
+https://github.com/ivmai/bdwgc/wiki/Download
+
+or
+
+http://www.hboehm.info/gc/
 
 OVERVIEW
 
@@ -69,7 +78,7 @@ of the ACM SIGPLAN '96 Conference on Programming Language Design and
 Implementation.
 
 (Some of these are also available from
-http://www.hpl.hp.com/personal/Hans_Boehm/papers/, among other places.)
+http://www.hboehm.info/gc/papers/, among other places.)
 
   Unlike the collector described in the second reference, this collector
 operates either with the mutator stopped during the entire collection
@@ -88,16 +97,14 @@ was part of version 8 UNIX (tm), but appears to not have received
 widespread use.
 
   Rudimentary tools for use of the collector as a leak detector are included
-(see http://www.hpl.hp.com/personal/Hans_Boehm/gc/leak.html),
+(see http://www.hboehm.info/gc/leak.html),
 as is a fairly sophisticated string package "cord" that makes use of the
 collector.  (See doc/README.cords and H.-J. Boehm, R. Atkinson, and M. Plass,
 "Ropes: An Alternative to Strings", Software Practice and Experience 25, 12
 (December 1995), pp. 1315-1330.  This is very similar to the "rope" package
 in Xerox Cedar, or the "rope" package in the SGI STL or the g++ distribution.)
 
-Further collector documantation can be found at
-
-http://www.hpl.hp.com/personal/Hans_Boehm/gc
+Further collector documentation can be found in overview.html
 
 
 GENERAL DESCRIPTION
@@ -113,7 +120,7 @@ introduced leaks, the amount of unreclaimed memory typically stays
 bounded.
 
   In the following, an "object" is defined to be a region of memory allocated
-by the routines described below.  
+by the routines described below.
 
   Any objects not intended to be collected must be pointed to either
 from other such accessible objects, or from the registers,
@@ -124,26 +131,26 @@ ALL_INTERIOR_POINTERS defined, or GC_all_interior_pointers is otherwise
 set, as is now the default.
 
 Compiling without ALL_INTERIOR_POINTERS may reduce accidental retention
-of garbage objects, by requiring pointers from the heap to to the beginning
+of garbage objects, by requiring pointers from the heap to the beginning
 of an object.  But this no longer appears to be a significant
 issue for most programs occupying a small fraction of the possible
 address space.
 
 There are a number of routines which modify the pointer recognition
 algorithm.  GC_register_displacement allows certain interior pointers
-to be recognized even if ALL_INTERIOR_POINTERS is nor defined.
+to be recognized even if ALL_INTERIOR_POINTERS is not defined.
 GC_malloc_ignore_off_page allows some pointers into the middle of large objects
-to be disregarded, greatly reducing the probablility of accidental
+to be disregarded, greatly reducing the probability of accidental
 retention of large objects.  For most purposes it seems best to compile
 with ALL_INTERIOR_POINTERS and to use GC_malloc_ignore_off_page if
 you get collector warnings from allocations of very large objects.
-See README.debugging for details.
+See debugging.html for details.
 
   WARNING: pointers inside memory allocated by the standard "malloc" are not
 seen by the garbage collector.  Thus objects pointed to only from such a
 region may be prematurely deallocated.  It is thus suggested that the
 standard "malloc" be used only for memory regions, such as I/O buffers, that
-are guaranteed not to contain pointers to garbage collectable memory.
+are guaranteed not to contain pointers to garbage collectible memory.
 Pointers in C language automatic, static, or register variables,
 are correctly recognized.  (Note that GC_malloc_uncollectable has semantics
 similar to standard malloc, but allocates objects that are traced by the
@@ -202,21 +209,24 @@ simplest case), or with a classic makefile by itself (type
 On other platforms, typically only the latter option is available, though
 with a different supplied Makefile.)
 
-  Typing "make test" nstead of "make" will automatically build the collector
-and then run setjmp_test and gctest. Setjmp_test will give you information
-about configuring the collector, which is useful primarily if you have
-a machine that's not already supported.  Gctest is a somewhat superficial
-test of collector functionality.  Failure is indicated by a core dump or
-a message to the effect that the collector is broken.  Gctest takes about 
-a second to two to run on reasonable 2007 vintage desktops.
-It may use up to about 30MB of memory.  (The
-multi-threaded version will use more.  64-bit versions may use more.)
-"Make test" will also, as its last step, attempt to build and test the
-"cord" string library.)
+  For the Makefile.direct-based process, typing "make test" instead of "make"
+will automatically build the collector and then run setjmp_test and gctest.
+Setjmp_test will give you information about configuring the collector, which is
+useful primarily if you have a machine that's not already supported.  Gctest is
+a somewhat superficial test of collector functionality.  Failure is indicated
+by a core dump or a message to the effect that the collector is broken.  Gctest
+takes about a second to two to run on reasonable 2007 vintage desktops.  It may
+use up to about 30MB of memory.  (The multi-threaded version will use more.
+64-bit versions may use more.) "Make test" will also, as its last step, attempt
+to build and test the "cord" string library.)
 
-  The Makefile will generate a library gc.a which you should link against.
+  Makefile.direct will generate a library gc.a which you should link against.
 Typing "make cords" will add the cord library to gc.a.
-Note that this requires an ANSI C compiler.
+
+  The GNU style build process understands the usual targets.  "Make check"
+runs a number of tests.  "Make install" installs at least libgc, and libcord.
+Try "./configure --help" to see the configuration options.  It is currently
+not possible to exercise all combinations of build options this way.
 
   It is suggested that if you need to replace a piece of the collector
 (e.g. GC_mark_rts.c) you simply list your version ahead of gc.a on the
@@ -272,9 +282,9 @@ THE C INTERFACE TO THE ALLOCATOR
   The following routines are intended to be directly called by the user.
 Note that usually only GC_malloc is necessary.  GC_clear_roots and GC_add_roots
 calls may be required if the collector has to trace from nonstandard places
-(e.g. from dynamic library data areas on a machine on which the 
+(e.g. from dynamic library data areas on a machine on which the
 collector doesn't already understand them.)  On some machines, it may
-be desirable to set GC_stacktop to a good approximation of the stack base. 
+be desirable to set GC_stackbottom to a good approximation of the stack base.
 (This enhances code portability on HP PA machines, since there is no
 good way for the collector to compute this value.)  Client code may include
 "gc.h", which defines all of the following, plus many others.
@@ -324,17 +334,17 @@ good way for the collector to compute this value.)  Client code may include
       program startup.)
 
 6)  GC_malloc_ignore_off_page(bytes)
-	- identical to GC_malloc, but the client promises to keep a pointer to
-	  the somewhere within the first 256 bytes of the object while it is
-	  live.  (This pointer should nortmally be declared volatile to prevent
-	  interference from compiler optimizations.)  This is the recommended
-	  way to allocate anything that is likely to be larger than 100Kbytes
-	  or so.  (GC_malloc may result in failure to reclaim such objects.)
+        - identical to GC_malloc, but the client promises to keep a pointer to
+          the somewhere within the first 256 bytes of the object while it is
+          live.  (This pointer should normally be declared volatile to prevent
+          interference from compiler optimizations.)  This is the recommended
+          way to allocate anything that is likely to be larger than 100Kbytes
+          or so.  (GC_malloc may result in failure to reclaim such objects.)
 
 7)  GC_set_warn_proc(proc)
-	- Can be used to redirect warnings from the collector.  Such warnings
-	  should be rare, and should not be ignored during code development.
-      
+        - Can be used to redirect warnings from the collector.  Such warnings
+          should be rare, and should not be ignored during code development.
+
 8) GC_enable_incremental()
     - Enables generational and incremental collection.  Useful for large
       heaps on machines that provide access to page dirty information.
@@ -346,13 +356,13 @@ good way for the collector to compute this value.)  Client code may include
 9) Several routines to allow for registration of finalization code.
    User supplied finalization code may be invoked when an object becomes
    unreachable.  To call (*f)(obj, x) when obj becomes inaccessible, use
-	GC_register_finalizer(obj, f, x, 0, 0);
+        GC_register_finalizer(obj, f, x, 0, 0);
    For more sophisticated uses, and for finalization ordering issues,
    see gc.h.
 
   The global variable GC_free_space_divisor may be adjusted up from its
-default value of 4 to use less space and more collection time, or down for
-the opposite effect.  Setting it to 1 or 0 will effectively disable collections
+default value of 3 to use less space and more collection time, or down for
+the opposite effect.  Setting it to 1 will almost disable collections
 and cause all allocations to simply grow the heap.
 
   The variable GC_non_gc_bytes, which is normally 0, may be changed to reflect
@@ -362,13 +372,13 @@ in excessive memory consumption.
 
   Some additional tuning is possible through the parameters defined
 near the top of gc_priv.h.
-  
+
   If only GC_malloc is intended to be used, it might be appropriate to define:
 
 #define malloc(n) GC_malloc(n)
 #define calloc(m,n) GC_malloc((m)*(n))
 
-  For small pieces of VERY allocation intensive code, gc_inl.h
+  For small pieces of VERY allocation intensive code, gc_inline.h
 includes some allocation macros that may be used in place of GC_malloc
 and friends.
 
@@ -390,7 +400,7 @@ proposal without compiler changes.
 
   Very often it will also be necessary to use gc_allocator.h and the
 allocator declared there to construct STL data structures.  Otherwise
-subobjects of STL data structures wil be allcoated using a system
+subobjects of STL data structures will be allocated using a system
 allocator, and objects they refer to may be prematurely collected.
 
 USE AS LEAK DETECTOR:
@@ -406,7 +416,7 @@ also be automatically reclaimed.
 the default version of report_leak will report at least the source file and
 line number at which the leaked object was allocated.  This may sometimes be
 sufficient.  (On a few machines, it will also report a cryptic stack trace.
-If this is not symbolic, it can somethimes be called into a sympolic stack
+If this is not symbolic, it can sometimes be called into a sympolic stack
 trace by invoking program "foo" with "callprocs foo".  Callprocs is a short
 shell script that invokes adb to expand program counter values to symbolic
 addresses.  It was largely supplied by Scott Schwartz.)
@@ -432,8 +442,7 @@ collector is invoked while the object is live.  The first deallocation
 of an object will clear the debugging info associated with an
 object, so accidentally repeated calls to GC_debug_free will report the
 deallocation of an object without debugging information.  Out of
-memory errors will be reported to stderr, in addition to returning
-NIL.
+memory errors will be reported to stderr, in addition to returning NULL.
 
   GC_debug_malloc checking  during garbage collection is enabled
 with the first call to GC_debug_malloc.  This will result in some
@@ -445,7 +454,7 @@ the debugger.
 or GC_free, and conversely.  It is however acceptable to allocate only
 some objects with GC_debug_malloc, and to use GC_malloc for other objects,
 provided the two pools are kept distinct.  In this case, there is a very
-low probablility that GC_malloc allocated objects may be misidentified as
+low probability that GC_malloc allocated objects may be misidentified as
 having been overwritten.  This should happen with probability at most
 one in 2**32.  This probability is zero if GC_debug_malloc is never called.
 
@@ -463,13 +472,13 @@ extra arguments, where appropriate.  If gc.h is included without GC_DEBUG
 defined, then all these macros will instead be defined to their nondebugging
 equivalents.  (GC_REGISTER_FINALIZER is necessary, since pointers to
 objects with debugging information are really pointers to a displacement
-of 16 bytes form the object beginning, and some translation is necessary
+of 16 bytes from the object beginning, and some translation is necessary
 when finalization routines are invoked.  For details, about what's stored
-in the header, see the definition of the type oh in debug_malloc.c)
+in the header, see the definition of the type oh in dbg_mlc.c file.)
 
 INCREMENTAL/GENERATIONAL COLLECTION:
 
-The collector normally interrupts client code for the duration of 
+The collector normally interrupts client code for the duration of
 a garbage collection mark phase.  This may be unacceptable if interactive
 response is needed for programs with large heaps.  The collector
 can also run in a "generational" mode, in which it usually attempts to
@@ -505,20 +514,20 @@ GC_change_stubborn.
 This mechanism performs best for objects that are written only for
 initialization, and such that only one stubborn object is writable
 at once.  It is typically not worth using for short-lived
-objects.  Stubborn objects are treated less efficiently than pointerfree
+objects.  Stubborn objects are treated less efficiently than pointer-free
 (atomic) objects.
 
 A rough rule of thumb is that, in the absence of VM information, garbage
 collection pauses are proportional to the amount of pointerful storage
 plus the amount of modified "stubborn" storage that is reachable during
-the collection.  
+the collection.
 
 Initial allocation of stubborn objects takes longer than allocation
 of other objects, since other data structures need to be maintained.
 
 We recommend against random use of stubborn objects in client
 code, since bugs caused by inappropriate writes to stubborn objects
-are likely to be very infrequently observed and hard to trace.  
+are likely to be very infrequently observed and hard to trace.
 However, their use may be appropriate in a few carefully written
 library routines that do not make the objects themselves available
 for writing by client code.
@@ -531,7 +540,7 @@ reclaimed.  Exclusive-or'ing forward and backward links in a list
 doesn't cut it.
   Some C optimizers may lose the last undisguised pointer to a memory
 object as a consequence of clever optimizations.  This has almost
-never been observed in practice.  Send mail to boehm@acm.org
+never been observed in practice.  Use https://github.com/ivmai/bdwgc/issues
 for suggestions on how to fix your compiler.
   This is not a real-time collector.  In the standard configuration,
 percentage of time required for collection should be constant across
@@ -539,10 +548,10 @@ heap sizes.  But collection pauses will increase for larger heaps.
 They will decrease with the number of processors if parallel marking
 is enabled.
 (On 2007 vintage machines, GC times may be on the order of 5 msecs
-per MB of accessible memory that needs to be scanned and processor.
+per MB of accessible memory that needs to be scanned and processed.
 Your mileage may vary.)  The incremental/generational collection facility
 may help in some cases.
-  Please address bug reports to boehm@acm.org.  If you are
+  Please address bug reports to https://github.com/ivmai/bdwgc/issues.
+If you are
 contemplating a major addition, you might also send mail to ask whether
 it's already been done (or whether we tried and discarded it).
-

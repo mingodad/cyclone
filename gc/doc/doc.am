@@ -1,5 +1,4 @@
 # 
-# 
 # THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
 # OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
 # 
@@ -16,16 +15,16 @@
 
 # installed documentation
 #
-dist_pkgdata_DATA = \
+dist_doc_DATA = \
 	doc/barrett_diagram \
 	doc/debugging.html \
-	doc/gc.man \
 	doc/gcdescr.html \
 	doc/README \
 	doc/README.amiga \
 	doc/README.arm.cross \
 	doc/README.autoconf \
 	doc/README.changes \
+	doc/README.cmake \
 	doc/README.contributors \
 	doc/README.cords \
 	doc/README.DGUX386 \
@@ -53,3 +52,4 @@ dist_pkgdata_DATA = \
 	doc/simple_example.html \
 	doc/porting.html
 
+dist_man3_MANS = doc/gc.man

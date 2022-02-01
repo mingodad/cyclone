@@ -65,7 +65,7 @@ typedef struct {
   PCR_Any ed_client_data;
 } enumerate_data;
 
-void GC_enumerate_block(struct hblk *h; enumerate_data * ed)
+void GC_enumerate_block(struct hblk *h, enumerate_data * ed)
 {
     register hdr * hhdr;
     register int sz;
@@ -149,6 +149,8 @@ PCR_GC_Setup(void)
 {
     return PCR_ERes_okay;
 }
+
+extern GC_bool GC_quiet;
 
 PCR_ERes
 PCR_GC_Run(void)

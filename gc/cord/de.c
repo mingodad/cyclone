@@ -16,7 +16,7 @@
  * A really simple-minded text editor based on cords.
  * Things it does right:
  * 	No size bounds.
- *	Inbounded undo.
+ *	Unbounded undo.
  *	Shouldn't crash no matter what file you invoke it on (e.g. /vmunix)
  *		(Make sure /vmunix is not writable before you try this.)
  *	Scrolls horizontally.
@@ -30,15 +30,17 @@
 
 /* Boehm, May 19, 1994 2:20 pm PDT */
 #include <stdio.h>
+#include <stdlib.h> /* for exit() */
+
 #include "gc.h"
 #include "cord.h"
 
 #ifdef THINK_C
 #define MACINTOSH
-#include <ctype.h>
 #endif
+#include <ctype.h>
 
-#if defined(__BORLANDC__) && !defined(WIN32)
+#if (defined(__BORLANDC__) || defined(__CYGWIN__)) && !defined(WIN32)
     /* If this is DOS or win16, we'll fail anyway.	*/
     /* Might as well assume win32.			*/
 #   define WIN32
@@ -66,9 +68,15 @@
 #	define COLS 80
 #else
 #  include <curses.h>
+#  include <unistd.h> /* for sleep() */
 #  define de_error(s) { fprintf(stderr, s); sleep(2); }
 #endif
 #include "de_cmds.h"
+
+#define OUT_OF_MEMORY do { \
+                        fprintf(stderr, "Out of memory\n"); \
+                        exit(3); \
+                      } while (0)
 
 /* List of line number to position mappings, in descending order. */
 /* There may be holes.						  */
@@ -104,7 +112,7 @@ int need_redisplay = 0;	/* Line that needs to be redisplayed.	*/
 
 
 /* Current cursor position. Always within file. */
-int line = 0; 
+int line = 0;
 int col = 0;
 size_t file_pos = 0;	/* Character position corresponding to cursor.	*/
 
@@ -123,7 +131,7 @@ void prune_map()
 {
     line_map map = current_map;
     int start_line = map -> line;
-    
+
     current_map_size = 0;
     for(; map != 0; map = map -> previous) {
     	current_map_size++;
@@ -136,7 +144,8 @@ void prune_map()
 void add_map(int line, size_t pos)
 {
     line_map new_map = GC_NEW(struct LineMapRep);
-    
+
+    if (NULL == new_map) OUT_OF_MEMORY;
     if (current_map_size >= MAX_MAP_SIZE) prune_map();
     new_map -> line = line;
     new_map -> pos = pos;
@@ -158,7 +167,7 @@ size_t line_pos(int i, int *c)
     size_t cur;
     size_t next;
     line_map map = current_map;
-    
+
     while (map -> line > i) map = map -> previous;
     if (map -> line < i - 2) /* rebuild */ invalidate_map(i);
     for (j = map -> line, cur = map -> pos; j < i;) {
@@ -181,7 +190,8 @@ size_t line_pos(int i, int *c)
 void add_hist(CORD s)
 {
     history new_file = GC_NEW(struct HistoryRep);
-    
+
+    if (NULL == new_file) OUT_OF_MEMORY;
     new_file -> file_contents = current = s;
     current_len = CORD_len(s);
     new_file -> previous = now;
@@ -210,10 +220,11 @@ void replace_line(int i, CORD s)
     register int c;
     CORD_pos p;
     size_t len = CORD_len(s);
-    
+
     if (screen == 0 || LINES > screen_size) {
         screen_size = LINES;
-    	screen = (CORD *)GC_MALLOC(screen_size * sizeof(CORD));
+        screen = (CORD *)GC_MALLOC(screen_size * sizeof(CORD));
+        if (NULL == screen) OUT_OF_MEMORY;
     }
 #   if !defined(MACINTOSH)
         /* A gross workaround for an apparent curses bug: */
@@ -247,7 +258,7 @@ CORD retrieve_line(CORD s, size_t pos, unsigned column)
     			/* avoids scanning very long lines	*/
     int eol = CORD_chr(candidate, 0, '\n');
     int len;
-    
+
     if (eol == CORD_NOT_FOUND) eol = CORD_len(candidate);
     len = (int)eol - (int)column;
     if (len < 0) len = 0;
@@ -260,7 +271,7 @@ CORD retrieve_line(CORD s, size_t pos, unsigned column)
     CORD retrieve_screen_line(int i)
     {
     	register size_t pos;
-    	
+
     	invalidate_map(dis_line + LINES);	/* Prune search */
     	pos = line_pos(dis_line + i, 0);
     	if (pos == CORD_NOT_FOUND) return(CORD_EMPTY);
@@ -272,12 +283,12 @@ CORD retrieve_line(CORD s, size_t pos, unsigned column)
 void redisplay(void)
 {
     register int i;
-    
+
     invalidate_map(dis_line + LINES);	/* Prune search */
     for (i = 0; i < LINES; i++) {
         if (need_redisplay == ALL || need_redisplay == i) {
             register size_t pos = line_pos(dis_line + i, 0);
-            
+
             if (pos == CORD_NOT_FOUND) break;
             replace_line(i, retrieve_line(current, pos, dis_col));
             if (need_redisplay == i) goto done;
@@ -297,7 +308,7 @@ void normalize_display()
 {
     int old_line = dis_line;
     int old_col = dis_col;
-    
+
     dis_granularity = 1;
     if (LINES > 15 && COLS > 15) dis_granularity = 2;
     while (dis_line > line) dis_line -= dis_granularity;
@@ -334,7 +345,7 @@ void fix_cursor(void)
 void fix_pos()
 {
     int my_col = col;
-    
+
     if ((size_t)line > current_len) line = current_len;
     file_pos = line_pos(line, &my_col);
     if (file_pos == CORD_NOT_FOUND) {
@@ -349,7 +360,7 @@ void fix_pos()
 }
 
 #if defined(WIN32)
-#  define beep() Beep(1000 /* Hz */, 300 /* msecs */) 
+#  define beep() Beep(1000 /* Hz */, 300 /* msecs */)
 #elif defined(MACINTOSH)
 #	define beep() SysBeep(1)
 #else
@@ -399,11 +410,11 @@ void do_command(int c)
     int i;
     int need_fix_pos;
     FILE * out;
-    
+
     if ( c == '\r') c = '\n';
     if (locate_mode) {
         size_t new_pos;
-          
+
         if (c == LOCATE) {
               locate_mode = 0;
               locate_string = CORD_EMPTY;
@@ -514,7 +525,7 @@ void do_command(int c)
      	    {
      	        CORD left_part = CORD_substr(current, 0, file_pos);
      	        CORD right_part = CORD_substr(current, file_pos, current_len);
-     	        
+
      	        add_hist(CORD_cat(CORD_cat_char(left_part, (char)c),
      	        		  right_part));
      	        invalidate_map(line);
@@ -540,7 +551,7 @@ void generic_init(void)
 {
     FILE * f;
     CORD initial;
-    
+
     if ((f = fopen(arg_file_name, "rb")) == NULL) {
      	initial = "\n";
     } else {
@@ -565,6 +576,7 @@ int argc;
 char ** argv;
 {
     int c;
+    void *buf;
 
 #if defined(MACINTOSH)
 	console_options.title = "\pDumb Editor";
@@ -572,10 +584,12 @@ char ** argv;
 	argc = ccommand(&argv);
 #endif
     GC_INIT();
-    
+
     if (argc != 2) goto usage;
     arg_file_name = argv[1];
-    setvbuf(stdout, GC_MALLOC_ATOMIC(8192), _IOFBF, 8192);
+    buf = GC_MALLOC_ATOMIC(8192);
+    if (NULL == buf) OUT_OF_MEMORY;
+    setvbuf(stdout, buf, _IOFBF, 8192);
     initscr();
     noecho(); nonl(); cbreak();
     generic_init();
