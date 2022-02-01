@@ -19,7 +19,8 @@ jobs:
         sh do-conf-32
         ./mk-it-32.sh
         ./mk-it-32.sh install
-        tar zcf cyclone-linux-i686.tgz $HOME/local/cyclone-32
+        ln -s $HOME/local/cyclone-32 cyclone-32
+        tar zcf cyclone-linux-i686.tgz cyclone-32
     # run tests
     - name: run tests linux i686
       run: |
